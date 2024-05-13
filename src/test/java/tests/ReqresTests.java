@@ -11,26 +11,27 @@ import static org.hamcrest.Matchers.*;
 import static utils.RandomUtils.getJob;
 import static utils.RandomUtils.getName;
 
-public class RegresTests {
+public class ReqresTests {
     @BeforeAll
     static void beforeAll() {
-        RestAssured.baseURI = "https://reqres.in";
+        RestAssured.baseURI = "https://reqres.in/api/";
     }
 
     @Test
     @DisplayName("Успешная авторизация за пользователя")
     void successfulLoginTest() {
-        String authData = "{\n" +
-                "    \"email\": \"eve.holt@reqres.in\",\n" +
-                "    \"password\": \"cityslicka\"\n" +
-                "}";
+        String authData = """
+                {
+                    "email": "eve.holt@reqres.in",
+                    "password": "cityslicka"
+                }""";
 
         given()
                 .body(authData)
                 .contentType(JSON)
                 .when()
                 .log().uri()
-                .post("api/login")
+                .post("login")
                 .then()
                 .log().status()
                 .log().body()
@@ -43,17 +44,21 @@ public class RegresTests {
     void createUserTest() {
         String name = getName();
         String job = getJob();
-        String authData = "{\n" +
-                "    \"name\": \"" + name + "\",\n" +
-                "    \"job\": \"" + job + "\"" +
-                "}";
+
+        String auhDataTemplate = """
+                {
+                    "name": "%s",
+                    "job": "%s"
+                }""";
+
+        String authData = String.format(auhDataTemplate, name, job);
 
         given()
                 .body(authData)
                 .contentType(JSON)
                 .when()
                 .log().uri()
-                .post("api/users")
+                .post("users")
                 .then()
                 .log().status()
                 .log().body()
@@ -69,7 +74,7 @@ public class RegresTests {
     void getColorsListTest() {
         given()
                 .log().uri()
-                .get("api/unknown")
+                .get("unknown")
                 .then()
                 .log().status()
                 .log().body()
@@ -80,16 +85,18 @@ public class RegresTests {
     @Test
     @DisplayName("Регистрация пользователя без пароля")
     void registrationWithoutPasswordTest() {
-        String email = "{\n" +
-                "    \"email\": \"sydney@fife\"\n" +
-                "}";
+        String email = """
+                {
+                    "email": "sydney@fife"
+                }""";
+
         String errorMassage = "{\"error\":\"Missing password\"}";
 
         given()
                 .body(email)
                 .contentType(JSON)
                 .log().uri()
-                .post("api/register")
+                .post("register")
                 .then()
                 .log().status()
                 .log().body()
@@ -100,17 +107,18 @@ public class RegresTests {
     @Test
     @DisplayName("Изменение данных пользователя. Метод PATCH")
     void updateUsersInfoTest() {
-        String updateData = "{\n" +
-                "    \"name\": \"morpheus\",\n" +
-                "    \"job\": \"zion resident\"\n" +
-                "}";
+        String updateData = """
+                {
+                    "name": "morpheus",
+                    "job": "zion resident"
+                }""";
 
         given()
                 .body(updateData)
                 .contentType(JSON)
                 .log().body()
                 .log().uri()
-                .patch("/api/users/2")
+                .patch("/users/2")
                 .then()
                 .log().status()
                 .log().body()
