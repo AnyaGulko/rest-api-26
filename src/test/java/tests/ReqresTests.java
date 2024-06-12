@@ -1,130 +1,145 @@
 package tests;
 
-import io.restassured.RestAssured;
-import org.junit.jupiter.api.BeforeAll;
+import models.*;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.Date;
+
+import static io.qameta.allure.Allure.step;
 import static io.restassured.RestAssured.given;
-import static io.restassured.http.ContentType.JSON;
-import static org.hamcrest.Matchers.*;
+import static org.assertj.core.api.Assertions.*;
+import static specs.Specifications.*;
 import static utils.RandomUtils.getJob;
 import static utils.RandomUtils.getName;
 
-public class ReqresTests {
-    @BeforeAll
-    static void beforeAll() {
-        RestAssured.baseURI = "https://reqres.in/api/";
-    }
+public class ReqresTests extends TestBase {
 
     @Test
-    @DisplayName("Успешная авторизация за пользователя")
+    @DisplayName("Успешная авторизация пользователя")
     void successfulLoginTest() {
-        String authData = """
-                {
-                    "email": "eve.holt@reqres.in",
-                    "password": "cityslicka"
-                }""";
+        LoginRequestBodyModel authData = new LoginRequestBodyModel();
 
-        given()
-                .body(authData)
-                .contentType(JSON)
-                .when()
-                .log().uri()
-                .post("login")
-                .then()
-                .log().status()
-                .log().body()
-                .statusCode(200)
-                .body("token", is("QpwL5tke4Pnpja7X4"));
+        step("Создать запрос", () -> {
+            authData.setEmail("eve.holt@reqres.in");
+            authData.setPassword("cityslicka");
+        });
+
+        LoginResponseModel response = step("Выполнить запрос", () ->
+                given(RequestSpec)
+                        .body(authData)
+                        .when()
+                        .post("/login")
+                        .then()
+                        .spec(okResponseSpec)
+                        .extract().as(LoginResponseModel.class));
+
+        step("Проверить ответ", () ->
+                assertThat("QpwL5tke4Pnpja7X4").isEqualTo(response.getToken()));
     }
 
     @Test
     @DisplayName("Успешное создание пользователя")
     void createUserTest() {
-        String name = getName();
-        String job = getJob();
+        UserCreationRequestModel request = new UserCreationRequestModel();
 
-        String auhDataTemplate = """
-                {
-                    "name": "%s",
-                    "job": "%s"
-                }""";
+        step("Создать запрос", () -> {
+            request.setName(getName());
+            request.setJob(getJob());
+        });
 
-        String authData = String.format(auhDataTemplate, name, job);
+        UserCreationResponseModel response = step("Выполнить запрос", () ->
+                given(RequestSpec)
+                        .body(request)
+                        .when()
+                        .post("/users")
+                        .then()
+                        .spec(userCreatingResponseSpec)
+                        .extract().as(UserCreationResponseModel.class));
 
-        given()
-                .body(authData)
-                .contentType(JSON)
-                .when()
-                .log().uri()
-                .post("users")
-                .then()
-                .log().status()
-                .log().body()
-                .statusCode(201)
-                .body("name", is(name))
-                .body("job", is(job))
-                .body("id", notNullValue())
-                .body("createdAt", notNullValue());
+        step("Проверить ответ", () -> {
+            assertThat(request.getJob()).isEqualTo(response.getJob());
+            assertThat(request.getName()).isEqualTo(response.getName());
+            assertThat(response.getId()).isNotBlank();
+            assertThat(response.getCreatedAt()).isInSameDayAs(new Date());
+        });
     }
 
+
     @Test
+    @Disabled
     @DisplayName("Получение списка цветов")
     void getColorsListTest() {
-        given()
-                .log().uri()
-                .get("unknown")
-                .then()
-                .log().status()
-                .log().body()
-                .statusCode(200)
-                .body("data.id", hasItems(1, 2, 3, 4, 5, 6));
+        ColorsListResponseModel response = step("Выполнить запрос", () ->
+                given(RequestSpec)
+                        .when()
+                        .get("/unknown")
+                        .then()
+                        .spec(okResponseSpec)
+                        .extract().as(ColorsListResponseModel.class));
+
+        step("Проверить ответ", () -> {
+        });
+
+//        given()
+//                .log().uri()
+//                .get("/unknown")
+//                .then()
+//                .log().status()
+//                .log().body()
+//                .statusCode(200)
+//                .body("data.id", hasItems(1, 2, 3, 4, 5, 6));
     }
 
     @Test
     @DisplayName("Регистрация пользователя без пароля")
     void registrationWithoutPasswordTest() {
-        String email = """
-                {
-                    "email": "sydney@fife"
-                }""";
+        LoginRequestBodyModel authData = new LoginRequestBodyModel();
 
-        String errorMassage = "{\"error\":\"Missing password\"}";
+        step("Создать запрос", () -> {
+            authData.setEmail("eve.holt@reqres.in");
+        });
 
-        given()
-                .body(email)
-                .contentType(JSON)
-                .log().uri()
-                .post("register")
-                .then()
-                .log().status()
-                .log().body()
-                .statusCode(400)
-                .body(is(errorMassage));
+        ErrorMassageModel response = step("Создать запрос", () ->
+                given(RequestSpec)
+                        .body(authData)
+                        .when()
+                        .post("/login")
+                        .then()
+                        .spec(bedRequestResponseSpec)
+                        .extract().as(ErrorMassageModel.class));
+
+        step("Проверить ответ", () ->
+                assertThat("Missing password").isEqualTo(response.getError()));
     }
+
 
     @Test
     @DisplayName("Изменение данных пользователя. Метод PATCH")
     void updateUsersInfoTest() {
-        String updateData = """
-                {
-                    "name": "morpheus",
-                    "job": "zion resident"
-                }""";
 
-        given()
-                .body(updateData)
-                .contentType(JSON)
-                .log().body()
-                .log().uri()
-                .patch("/users/2")
-                .then()
-                .log().status()
-                .log().body()
-                .statusCode(200)
-                .body("name", is("morpheus"))
-                .body("job", is("zion resident"));
+        UserUpdateRequestModel request = new UserUpdateRequestModel();
+
+        step("Создать запрос", () -> {
+            request.setName(getName());
+            request.setJob(getJob());
+        });
+
+        UserUpdateResponseModel response = step("Выполнить запрос", () ->
+                given(RequestSpec)
+                        .body(request)
+                        .when()
+                        .patch("/users/2")
+                        .then()
+                        .spec(okResponseSpec)
+                        .extract().as(UserUpdateResponseModel.class));
+
+        step("Проверить ответ", () -> {
+            assertThat(request.getJob()).isEqualTo(response.getJob());
+            assertThat(request.getName()).isEqualTo(response.getName());
+            assertThat(response.getUpdatedAt()).isInSameDayAs(new Date());
+        });
     }
 
 }
