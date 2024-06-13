@@ -11,7 +11,7 @@ public class ColorsListResponseModel {
     @JsonProperty("per_page")
     int perPage;
     int total;
-    @JsonProperty("totalPages")
+    @JsonProperty("total_pages")
     int totalPages;
     List<ColorInfo> data;
     SupportInfo support;
@@ -22,7 +22,7 @@ public class ColorsListResponseModel {
         String name;
         int year;
         String color;
-        @JsonProperty("pantoneValue")
+        @JsonProperty("pantone_value")
         String pantoneValue;
     }
 

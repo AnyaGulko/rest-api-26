@@ -1,15 +1,16 @@
 package tests;
 
 import models.*;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 import static io.qameta.allure.Allure.step;
 import static io.restassured.RestAssured.given;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static specs.Specifications.*;
 import static utils.RandomUtils.getJob;
 import static utils.RandomUtils.getName;
@@ -68,7 +69,6 @@ public class ReqresTests extends TestBase {
 
 
     @Test
-    @Disabled
     @DisplayName("Получение списка цветов")
     void getColorsListTest() {
         ColorsListResponseModel response = step("Выполнить запрос", () ->
@@ -80,16 +80,13 @@ public class ReqresTests extends TestBase {
                         .extract().as(ColorsListResponseModel.class));
 
         step("Проверить ответ", () -> {
-        });
+            List<Integer> ids = response.getData()
+                    .stream()
+                    .map((ColorsListResponseModel.ColorInfo colorInfo) -> colorInfo.getId())
+                    .toList();
 
-//        given()
-//                .log().uri()
-//                .get("/unknown")
-//                .then()
-//                .log().status()
-//                .log().body()
-//                .statusCode(200)
-//                .body("data.id", hasItems(1, 2, 3, 4, 5, 6));
+            assertThat(ids).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6));
+        });
     }
 
     @Test
